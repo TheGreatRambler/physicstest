@@ -13,12 +13,14 @@
         var terrainWidth = 500;
         var terrainDepth = 500;
         
-        var terrainmultiplier = 100;
+        var terrainmultiplier = 200;
         
         var terrainHalfWidth = terrainWidth / 2;
         var terrainHalfDepth = terrainDepth / 2;
         var terrainMaxHeight = 8;
         var terrainMinHeight = -8;
+        
+        var gravityvector = new Ammo.btVector3(0, -200, 0);
 
         // Graphics variables
         var container, stats;
@@ -38,18 +40,14 @@
 
         var heightData = null;
         var ammoHeightData = null;
-
-        var time = 0;
-        var objectTimePeriod = 0.02;
-        var timeNextSpawn = time + objectTimePeriod;
-        var maxNumObjects = 60;
         
         var width = window.innerWidth;
         var height = window.innerHeight;
         
         var playerindex;
+        var playerpower = 50;
         
-        var xdistancefromplayercamera = 0;
+        var distancefromplayercamera = 0;
         var speedofrotation = 2;
         
         var playerphysics;
@@ -58,7 +56,12 @@
             up: false,
             down: false,
             left: false,
-            right: false
+            right: false,
+            w: false,
+            s: false,
+            a: false,
+            d: false,
+            space: false
         };
         
         var clockkeydata = {
@@ -71,6 +74,21 @@
         // - Main code -
         init();
         animate();
+        for (var f = 0; f < 10; f++) {
+            generateObject({
+                type: "sphere",
+                radius: 3,
+                mass: 1,
+                x: 10,
+                y: f * 11,
+                z: 0,
+                material: new THREE.MeshPhongMaterial({ 
+                    color: 0x996633, 
+                    specular: 0x050505,
+                    shininess: 100
+                }) 
+            });
+        }
 
         function init() {
 
@@ -171,9 +189,9 @@
         }
         
         function initplayer() {
-            var startx = 10;
+            var startx = 0;
             var starty = 200;
-            var startz = 10;
+            var startz = 0;
             var player = generateObject({
                     type: "sphere",
                     radius: 5,
@@ -205,7 +223,7 @@
             broadphase = new Ammo.btDbvtBroadphase();
             solver = new Ammo.btSequentialImpulseConstraintSolver();
             physicsWorld = new Ammo.btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-            physicsWorld.setGravity(new Ammo.btVector3(0, -100, 0));
+            physicsWorld.setGravity(gravityvector);
 
             // Create the terrain body
 
@@ -232,7 +250,7 @@
             var p = 0;
             for (var j = 0; j < depth; j++) {
                 for (var i = 0; i < width; i++) {
-                    var height = terrain.getdata(i, j).h * 100;
+                    var height = terrain.getdata(i, j).h * terrainmultiplier;
                     data[p] = height;
 
                     p++;
@@ -244,73 +262,98 @@
         }
         
         window.addEventListener("keydown", function(e) {
-            if (e.keyCode === 37) {
+            if (e.key === "ArrowLeft") {
                 // left arrow
                 keydata.left = true;
                 e.preventDefault();
-            } else if (e.keyCode === 38) {
+            } else if (e.key === "ArrowUp") {
                 // up arrow
                 keydata.up = true;
                 e.preventDefault();
-            } else if (e.keyCode === 39) {
+            } else if (e.key === "ArrowRight") {
                 // right arrow
                 keydata.right = true;
                 e.preventDefault();
-            } else if (e.keyCode === 40) {
+            } else if (e.key === "ArrowDown") {
                 // down arrow
                 keydata.down = true;
+                e.preventDefault();
+            } else if (e.key === 's') {
+                keydata.s = true;
+            } else if (e.key === 'w') {
+                keydata.w = true;
+            } else if (e.key === 'a') {
+                keydata.a = true;
+            } else if (e.key === 'd') {
+                keydata.d = true;
+            } else if (e.key === "Space") {
+                keydata.space = true;
                 e.preventDefault();
             }
         });
         
         window.addEventListener("keyup", function(e) {
-            if (e.keyCode === 37) {
+            if (e.key === "ArrowLeft") {
                 // left arrow
                 keydata.left = false;
                 e.preventDefault();
-            } else if (e.keyCode === 38) {
+            } else if (e.key === "ArrowUp") {
                 // up arrow
                 keydata.up = false;
                 e.preventDefault();
-            } else if (e.keyCode === 39) {
+            } else if (e.key === "ArrowRight") {
                 // right arrow
                 keydata.right = false;
                 e.preventDefault();
-            } else if (e.keyCode === 40) {
+            } else if (e.key === "ArrowDown") {
                 // down arrow
                 keydata.down = false;
+                e.preventDefault();
+            } else if (e.key === 's') {
+                keydata.s = false;
+            } else if (e.key === 'w') {
+                keydata.w = false;
+            } else if (e.key === 'a') {
+                keydata.a = false;
+            } else if (e.key === 'd') {
+                keydata.d = false;
+            } else if (e.key === "Space") {
+                keydata.space = false;
                 e.preventDefault();
             }
         });
         
-        Mousetrap.bind({
-            's': function() {
-                /*
-                var tr = new Ammo.btTransform();
-                tr.setIdentity();
-                var quat = new Ammo.btQuaternion();
-                console.log(THREE.Math.radToDeg(camera.rotation.y));
-                quat.setEulerZYX(0, THREE.Math.radToDeg(camera.rotation.y), 0);
-                tr.setRotation(quat);
-                playerphysics.setWorldTransform(tr);
-                */
-                var force = new Ammo.btVector3(0, 0, 100);
-                var rotation = playerphysics.getCenterOfMassTransform().getBasis().getRotation();
-                playerphysics.setLinearVelocity(force);
-            },
-            'w': function() {
-                var force = new Ammo.btVector3(0, 0, -100);
-                playerphysics.setLinearVelocity(force);
-            },
-            'a': function() {
-                var force = new Ammo.btVector3(-100, 0, 0);
-                playerphysics.setLinearVelocity(force);
-            },
-            'd': function() {
-                var force = new Ammo.btVector3(100, 0, 0);
-                playerphysics.setLinearVelocity(force);
+        function returnproperdegrees(degree) {
+            var degreedecision = degree > 360 ? degree % 360 : degree;
+            return degreedecision;
+            console.log(degree, degreedecision);
+        }
+        
+        function returnveolocity(angle, power) {
+            angle = returnproperdegrees(angle + 180);
+            // console.log(angle);
+            if (angle === 0) {
+                return [0, 0, power * -1];
+            } else if (angle < 90) {
+                var fraction = angle / 90;
+                return [power * fraction * -1, 0, power * (1 - fraction) * -1];
+            } else if (angle === 90) {
+                return [power, 0, 0];
+            } else if (angle < 180) {
+                var fraction = (angle - 90) / 90;
+                return [power * (1 - fraction) * -1, 0, power * fraction];
+            } else if (angle === 180) {
+                return [0, 0, power];
+            } else if (angle < 270) {
+                var fraction = (angle - 180) / 90;
+                return [power * fraction, 0, power * (1 - fraction)];
+            } else if (angle === 270) {
+                return [-power, 0, 0];
+            } else if (angle <= 360) {
+                var fraction = (angle - 270) / 90;
+                return [power * (1 - fraction), 0, power * fraction * -1];
             }
-        });
+        }
 
         function createTerrainShape() {
 
@@ -460,19 +503,6 @@
 
             var deltaTime = clock.getDelta();
 
-            if (dynamicObjects.length < maxNumObjects && time > timeNextSpawn) {
-                generateObject({
-                    type: "sphere",
-                    radius: 5,
-                    x: 0,
-                    y: 200,
-                    z: 0,
-                    mass: 10,
-                    material: createObjectMaterial()
-                });
-                timeNextSpawn = time + objectTimePeriod;
-            }
-
             updatePhysics(deltaTime);
             
             updatecamera();
@@ -480,8 +510,6 @@
             updatelooking();
 
             renderer.render(scene, camera);
-
-            time += deltaTime;
 
         }
         
@@ -521,6 +549,39 @@
                 }
                 camera.updateProjectionMatrix();
             }
+            
+            if (keydata.s) {
+                var vector = camera.getWorldDirection();
+                var vectordata = returnveolocity(returnproperdegrees(THREE.Math.radToDeg(Math.atan2(vector.x,vector.z)) + 180), playerpower);
+                var force = new Ammo.btVector3(vectordata[0], vectordata[1], vectordata[2]);
+                playerphysics.setLinearVelocity(force);
+            }
+            
+            if (keydata.w) {
+                var vector = camera.getWorldDirection();
+                var vectordata = returnveolocity(returnproperdegrees(THREE.Math.radToDeg(Math.atan2(vector.x,vector.z))), playerpower);
+                var force = new Ammo.btVector3(vectordata[0], vectordata[1], vectordata[2]);
+                playerphysics.setLinearVelocity(force);
+            }
+            
+            if (keydata.d) {
+                var vector = camera.getWorldDirection();
+                var vectordata = returnveolocity(returnproperdegrees(THREE.Math.radToDeg(Math.atan2(vector.x,vector.z)) + 270), playerpower);
+                var force = new Ammo.btVector3(vectordata[0], vectordata[1], vectordata[2]);
+                playerphysics.setLinearVelocity(force);
+            }
+            
+            if (keydata.a) {
+                var vector = camera.getWorldDirection();
+                var vectordata = returnveolocity(returnproperdegrees(THREE.Math.radToDeg(Math.atan2(vector.x,vector.z)) + 90), playerpower);
+                var force = new Ammo.btVector3(vectordata[0], vectordata[1], vectordata[2]);
+                playerphysics.setLinearVelocity(force);
+            }
+            
+            if (keydata.space) {
+                var force = new Ammo.btVector3(0, playerpower / 2, 0);
+                playerphysics.setLinearVelocity(force);
+            }
         }
 
         function updatePhysics(deltaTime) {
@@ -544,8 +605,35 @@
         }
         
         function updatecamera() {
+            /*
+            var vector = camera.getWorldDirection();
+            var cameraangle = THREE.Math.radToDeg(Math.atan2(vector.x,vector.z)) + 180;
+            var x = distancefromplayercamera * Math.sin(THREE.Math.degToRad(degrees))
+            var y = 
+            var z = 
+            */
+            /*
+            var heading2 = camera.rotation.x;
+            var radians2 = heading2 > 0 ? heading2 : (2 * Math.PI) + heading2;
+            var xdeg = returnproperdegrees(THREE.Math.radToDeg(radians2));
+            var heading1 = camera.rotation.y;
+            var radians1 = heading1 > 0 ? heading1 : (2 * Math.PI) + heading1;
+            var ydeg = returnproperdegrees(THREE.Math.radToDeg(radians1));
+            var heading3 = camera.rotation.z;
+            var radians3 = heading3 > 0 ? heading3 : (2 * Math.PI) + heading3;
+            var zdeg = returnproperdegrees(THREE.Math.radToDeg(radians3));
+            
+            console.log(xdeg, ydeg, zdeg);
+            
+            var x = distancefromplayercamera * Math.cos(THREE.Math.degToRad(ydeg)) * Math.cos(THREE.Math.degToRad(zdeg));
+            var z = distancefromplayercamera * Math.sin(THREE.Math.degToRad(ydeg)) * Math.cos(THREE.Math.degToRad(zdeg));
+            var y = distancefromplayercamera * Math.sin(THREE.Math.degToRad(zdeg));
+            
+            console.log(x, y, z);
+            */
+            
             var playerobject = dynamicObjects[playerindex];
-            camera.position.x = playerobject.position.x + xdistancefromplayercamera;
+            camera.position.x = playerobject.position.x;
             camera.position.y = playerobject.position.y;
             camera.position.z = playerobject.position.z;
             camera.updateProjectionMatrix();
