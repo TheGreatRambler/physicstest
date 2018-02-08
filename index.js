@@ -47,7 +47,7 @@ var height = window.innerHeight;
 var speedmultiply = 1;
 
 var playerindex;
-var playerpower = 50;
+var playerpower = 60;
 
 var distancefromplayercamera = 30;
 var speedofrotation = 2;
@@ -292,7 +292,7 @@ window.addEventListener("keydown", function(e) {
         keydata.a = true;
     } else if (e.key === 'd') {
         keydata.d = true;
-    } else if (e.key === "Space") {
+    } else if (e.key === " ") {
         keydata.space = true;
         e.preventDefault();
     }
@@ -323,7 +323,7 @@ window.addEventListener("keyup", function(e) {
         keydata.a = false;
     } else if (e.key === 'd') {
         keydata.d = false;
-    } else if (e.key === "Space") {
+    } else if (e.key === " ") {
         keydata.space = false;
         e.preventDefault();
     }
@@ -563,34 +563,33 @@ function updatekeystuff() {
         var vector = camera.getWorldDirection();
         var vectordata = returnveolocity(returnproperdegrees(THREE.Math.radToDeg(Math.atan2(vector.x, vector.z)) + 180), playerpower);
         var force = new Ammo.btVector3(vectordata[0], vectordata[1], vectordata[2]);
-        playerphysics.setLinearVelocity(force);
+        playerphysics.applyImpulse(force);
     }
 
     if (keydata.w) {
         var vector = camera.getWorldDirection();
         var vectordata = returnveolocity(returnproperdegrees(THREE.Math.radToDeg(Math.atan2(vector.x, vector.z))), playerpower);
         var force = new Ammo.btVector3(vectordata[0], vectordata[1], vectordata[2]);
-        playerphysics.setLinearVelocity(force);
+        playerphysics.applyImpulse(force);
     }
 
     if (keydata.d) {
         var vector = camera.getWorldDirection();
         var vectordata = returnveolocity(returnproperdegrees(THREE.Math.radToDeg(Math.atan2(vector.x, vector.z)) + 270), playerpower);
         var force = new Ammo.btVector3(vectordata[0], vectordata[1], vectordata[2]);
-        playerphysics.setLinearVelocity(force);
+        playerphysics.applyImpulse(force);
     }
 
     if (keydata.a) {
         var vector = camera.getWorldDirection();
         var vectordata = returnveolocity(returnproperdegrees(THREE.Math.radToDeg(Math.atan2(vector.x, vector.z)) + 90), playerpower);
         var force = new Ammo.btVector3(vectordata[0], vectordata[1], vectordata[2]);
-        playerphysics.setLinearVelocity(force);
+        playerphysics.applyImpulse(force);
     }
 
     if (keydata.space) {
-        var force = new Ammo.btVector3(0, playerpower, 0);
-        console.log("jshdjkhskjdh");
-        playerphysics.setLinearVelocity(force);
+        var force = new Ammo.btVector3(0, playerpower * 2, 0);
+        playerphysics.applyImpulse(force);
     }
 }
 
